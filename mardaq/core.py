@@ -1,13 +1,14 @@
-import board
-import busio
+# import board
+# import busio
 from datetime import datetime, timedelta, timezone
 import fcntl
 import io
-from labjack import ljm
+# from labjack import ljm
 import logging
 from netrc import netrc
 import mysql.connector
-from netCDF4 import Dataset
+# from netCDF4 import Dataset
+import pandas as pd
 import numpy as np
 import os
 from pynmeagps import NMEAReader

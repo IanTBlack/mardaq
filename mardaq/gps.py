@@ -1,7 +1,7 @@
 from mardaq.core import *
 
 class AdafruitHAT():
-    def __init__(self, serial_number, port = '/dev/serial0', baudrate = 9600, timeout = 10):
+    def __init__(self, serial_number, port = '/dev/ttyS0', baudrate = 9600, timeout = 10):
         self.sn = serial_number
         self.port = port
         self.baudrate = baudrate

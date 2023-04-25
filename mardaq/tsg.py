@@ -29,11 +29,11 @@ class AtlasTSG():
         # c = self.a/(1+(self.a * (self.standard_temp - 25)))  #Hayashi, 2003
         # comp_ec = ec * (1 - (c * (t - self.standard_temp)))
 
-        pracsal = float(gsw.SP_from_C(ec, t, p = 0))
+        # pracsal = float(gsw.SP_from_C(ec, t, p = 0))
 
 
         dt = datetime.now(timezone.utc) - timedelta(milliseconds=300)
-        return (self.sn, dt, t, ec, pracsal)
+        return (self.sn, dt, t, ec)
 
 
     # def get_compensated_state(self):
