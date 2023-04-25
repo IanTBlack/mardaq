@@ -12,6 +12,8 @@ class MARDB():
         self.setup_db(cruise_id)
         self.setup_tables()
 
+
+
     def setup_db(self, cruise_id):
         self.cruise_id = str(cruise_id).lower()
         statement = f"CREATE DATABASE IF NOT EXISTS {self.cruise_id}"
@@ -37,6 +39,18 @@ class MARDB():
         self.cursor.execute(statement, data_tuple)
         self.connection.commit()
 
+    def read_pump(self,export_as = 'pandas'):
+        columns = ['sn','datetime','pump_relay_state','pump_on']
+        statement = f"SELECT * FROM pump"
+        self.cursor.execute(statement)
+        data = self.cursor.fetchall()
+
+        if export_as == "list":
+            return data
+        elif export_as == 'pandas':
+            df = pd.DataFrame(data,columns = columns)
+            return df
+
     def setup_valve_table(self):
         statement = "CREATE TABLE IF NOT EXISTS valve (serial_number CHAR(10), datetime DATETIME, valve_relay_state BOOLEAN, seawater_state CHAR(3))"
         self.cursor.execute(statement)
@@ -45,6 +59,18 @@ class MARDB():
         statement = f"INSERT INTO valve (serial_number, datetime, valve_relay_state, seawater_state) VALUES (%s, %s, %s, %s)"
         self.cursor.execute(statement, data_tuple)
         self.connection.commit()
+
+    def read_valve(self,export_as = 'pandas'):
+        columns = ['sn','datetime','valve_relay_state','seawater_state']
+        statement = f"SELECT * FROM valve"
+        self.cursor.execute(statement)
+        data = self.cursor.fetchall()
+
+        if export_as == "list":
+            return data
+        elif export_as == 'pandas':
+            df = pd.DataFrame(data,columns = columns)
+            return df
 
     def setup_flow_table(self):
         statement = "CREATE TABLE IF NOT EXISTS flow (serial_number CHAR(10), datetime DATETIME, kfactor FLOAT, pulses INT, ml FLOAT, ml_per_min FLOAT)"
@@ -64,11 +90,37 @@ class MARDB():
         self.cursor.execute(statement, data_tuple)
         self.connection.commit()
 
+
+    def read_gps(self,export_as = 'pandas'):
+        columns = ['sn','datetime','raw_string','status','gps_datetime','latitude','longitude','cog','speed']
+        statement = f"SELECT * FROM gps"
+        self.cursor.execute(statement)
+        data = self.cursor.fetchall()
+
+        if export_as == "list":
+            return data
+        elif export_as == 'pandas':
+            df = pd.DataFrame(data,columns = columns)
+            return df
+
+
     def setup_tsg_table(self):
-        statement = "CREATE TABLE IF NOT EXISTS tsg (serial_number CHAR(10), datetime DATETIME, temperature FLOAT, conductivity FLOAT, practical_salinity FLOAT)"
+        statement = "CREATE TABLE IF NOT EXISTS tsg (serial_number CHAR(10), datetime DATETIME, temperature FLOAT, conductivity FLOAT)"
         self.cursor.execute(statement)
 
     def write_tsg(self, data_tuple):
-        statement = f"INSERT INTO tsg (serial_number, datetime, temperature, conductivity, practical_salinity) VALUES (%s, %s, %s, %s, %s)"
+        statement = f"INSERT INTO tsg (serial_number, datetime, temperature, conductivity) VALUES (%s, %s, %s, %s)"
         self.cursor.execute(statement, data_tuple)
         self.connection.commit()
+
+    def read_tsg(self,export_as = 'pandas'):
+        columns = ['sn','datetime','temperature','conductivity']
+        statement = f"SELECT * FROM tsg"
+        self.cursor.execute(statement)
+        data = self.cursor.fetchall()
+
+        if export_as == "list":
+            return data
+        elif export_as == 'pandas':
+            df = pd.DataFrame(data,columns = columns)
+            return df
