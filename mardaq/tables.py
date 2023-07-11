@@ -1,11 +1,5 @@
 class TABLE:
 
-    class ANNO:
-        FIELDS_DTYPES = {'time': 'DATETIME(6)',
-                         'sensor_or_component': 'VARCHAR(64)',
-                         'annotation': 'TEXT'}
-
-
     class GPS:
         FIELDS_DTYPES = {'time':'DATETIME(6)',
                          'latitude': 'FLOAT',
