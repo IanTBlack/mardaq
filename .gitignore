@@ -1,5 +1,8 @@
 # Pycharm
 .idea/
 
+#Jupyter Lab
+.ipynb_checkpoints/
+
 # Local
 /scratch

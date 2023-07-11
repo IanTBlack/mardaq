@@ -1,39 +1,60 @@
+from datetime import datetime, timezone
 import gsw
+import time
+import numpy as np
 
-from mardaq.core import *
-from mardaq.ezo import EZO
-
-
+from mardaq.sensors.ezo import EZO
+from mardaq.core import initialize_logger
 class AtlasTSG():
     def __init__(self,serial_number):
+        self._log = initialize_logger()
         self.sn = serial_number
         self.ec = AtlasEC()
+        self._log.info('Set up Atlas EC.')
         self.rtd = AtlasRTD()
+        self._log.info('Set up Atlas PT1000.')
         self.standard_temp = 25
         self.a = 0.0187 # Hayashi, 2003
+        self.sent_time = None
 
 
-    def get_state(self):
+    def request_data(self):
         self.ec.ezo.send_cmd('R')
         self.rtd.ezo.send_cmd('R')
-        time.sleep(0.6)
+        self.sent_time = time.monotonic()
+        self._log.info('Sent data request to Atlas EZOs.')
+
+    def get_data(self):
+        time_since_cmd_sent = time.monotonic() - self.sent_time
+        if time_since_cmd_sent < 0.600:
+            time.sleep(0.600 - time_since_cmd_sent)
+            self.sent_time = None
+        # self.ec.ezo.send_cmd('R')
+        # self.rtd.ezo.send_cmd('R')
+        # time.sleep(0.6)
+        dt = datetime.now(timezone.utc)
         t = self.rtd.ezo.read_response()
+        ec = self.ec.ezo.read_response()
+        self._log.info('Data acquired from Atlas EZOs.')
         t = t.replace(b'\x00',b'')
         t = t.replace(b'\x01',b'')
         t = float(t)
-        ec = self.ec.ezo.read_response()
+
         ec = ec.replace(b'\x00',b'')
         ec = ec.replace(b'\x01',b'')
         ec = float(ec) * (1/1000) # convert uS to ms
 
         # c = self.a/(1+(self.a * (self.standard_temp - 25)))  #Hayashi, 2003
         # comp_ec = ec * (1 - (c * (t - self.standard_temp)))
-
         # pracsal = float(gsw.SP_from_C(ec, t, p = 0))
 
 
-        dt = datetime.now(timezone.utc) - timedelta(milliseconds=300)
-        return (self.sn, dt, t, ec)
+        sp = float(gsw.SP_from_C(ec, t, p = 0))
+        if sp < 2:
+            sp = np.nan
+
+
+        return (dt, t, ec, sp, self.sn)
 
 
     # def get_compensated_state(self):
@@ -97,7 +118,6 @@ class AtlasEC():
             cmd = cmd + 'SG,'
         cmd = cmd + '0'
         self.ezo.send_cmd(cmd)
-
 
     def take_sample(self,wait = 0.6):
         self.ezo.send_cmd('R')

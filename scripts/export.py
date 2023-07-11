@@ -1,48 +1,83 @@
-from mardaq.core import *
+import os
+import numpy as np
+import xarray as xr
 from mardaq.database import MARDB
+from mardaq.core import load_config
+from mardaq.tables import TABLE
+from mardaq.sensors.acs import ACS
+from mardaq.converters import table2xr_gps, table2xr_acs, dev2xr_acs, table2xr_tsg, table2xr_valve, table2xr_pump, table2xr_flow
 
-save_dir = '/home/sel/mardaq/tests/exported_test_data/'
+def main():
+    folder = '/media/sel/flowthrough/data/netcdf/'
+    os.makedirs(folder,exist_ok=True)
 
-cruise_id = 'TEST_20230424A'
-mdb = MARDB(cruise_id)
+    cfg = load_config()
+    mdb = MARDB(database_name = cfg['deployment'])
 
+    ACSParser = ACS(cfg['sensors']['acs']['sn'], cfg['sensors']['acs']['cal_file'])
+    acs_cal_ds = dev2xr_acs(ACSParser)
+    acs_ds = table2xr_acs(mdb.get_data('acs'))  # ACS Data
 
-gps_data = mdb.read_gps()
-gps_filepath= os.path.join(save_dir, 'gps.csv')
-gps_data.to_csv(gps_filepath)
-gps_data.index = pd.to_datetime(gps_data['datetime'])
-gps_data = gps_data.drop(columns = ['datetime'])
-gps_data = gps_data[['latitude','longitude']]
-
-
-pump_data = mdb.read_pump()
-pump_filepath= os.path.join(save_dir, 'pump.csv')
-pump_data.to_csv(pump_filepath)
-pump_data.index = pd.to_datetime(pump_data['datetime'])
-pump_data = pump_data.drop(columns = ['datetime'])
-pump_data = pump_data[['pump_on']]
-
-tsg_data = mdb.read_tsg()
-tsg_filepath= os.path.join(save_dir, 'tsg.csv')
-tsg_data.to_csv(tsg_filepath)
-tsg_data.index = pd.to_datetime(tsg_data['datetime'])
-tsg_data = tsg_data.drop(columns = ['datetime'])
-tsg_data = tsg_data[['temperature','conductivity']]
-
-valve_data = mdb.read_valve()
-valve_filepath= os.path.join(save_dir, 'valve.csv')
-valve_data.to_csv(valve_filepath)
-valve_data.index = pd.to_datetime(valve_data['datetime'])
-valve_data = valve_data.drop(columns = ['datetime'])
-valve_data = valve_data[['valve_relay_state']]
-
-df = pd.concat([gps_data,pump_data,tsg_data,valve_data])
-binned = df.resample('5S').mean()
+    tsg_ds = table2xr_tsg(mdb.get_data('tsg'))
+    gps_ds = table2xr_gps(mdb.get_data('gps'))
+    valve_ds = table2xr_valve(mdb.get_data('valve'))
+    pump_ds = table2xr_pump(mdb.get_data('pump'))
+    flow_ds = table2xr_flow(mdb.get_data('flow'))
 
 
-binned_filepath = os.path.join(save_dir, "binned_5S.csv")
-binned['datetime'] = binned.index
-binned = binned.reset_index(drop = True)
-binned.to_csv(binned_filepath)
 
-xrnc = binned.set_index(['datetime','latitude','longitude']).to_xarray()
+
+
+
+    grouped_fp = os.path.join(folder, f"grouped_{cfg['deployment'].lower()}.nc")
+    export2nc_grouped(gps_ds, acs_cal_ds, acs_ds, tsg_ds, valve_ds, pump_ds, flow_ds, grouped_fp)
+
+    combo_fp = os.path.join(folder, f"combo_{cfg['deployment'].lower()}.nc")
+    export2nc_combo(gps_ds, acs_cal_ds, acs_ds, tsg_ds, valve_ds, pump_ds, flow_ds, combo_fp)
+
+
+    print('Conversion to netCDF complete!')
+
+def export2nc_grouped(gps_ds, acs_cal_ds, acs_ds, tsg_ds, valve_ds, pump_ds, flow_ds, save_filepath):
+    ds = xr.Dataset()
+    ds.to_netcdf(save_filepath,'w', engine = 'netcdf4')
+    gps_ds.to_netcdf(save_filepath,'a', engine = 'netcdf4',group = 'gps_data')
+    acs_ds.to_netcdf(save_filepath,'a', engine = 'netcdf4', group = 'acs_data')
+    acs_cal_ds.to_netcdf(save_filepath,'a', engine = 'netcdf4', group = 'acs_factory_calibration')
+    valve_ds.to_netcdf(save_filepath,'a', engine = 'netcdf4', group = 'filtration_data')
+    tsg_ds.to_netcdf(save_filepath,'a', engine = 'netcdf4', group = 'tsg_data')
+    pump_ds.to_netcdf(save_filepath,'a', engine = 'netcdf4', group = 'pump_data')
+    flow_ds.to_netcdf(save_filepath,'a', engine = 'netcdf4', group = 'flow_data')
+    if os.path.isfile(save_filepath):
+        return True
+
+
+def export2nc_combo(gps_ds, acs_cal_ds, acs_ds, tsg_ds, valve_ds, pump_ds, flow_ds, save_filepath):
+    combo = xr.concat([gps_ds, acs_ds, tsg_ds, valve_ds, pump_ds, flow_ds], dim = 'time')
+    combo.to_netcdf(save_filepath,'w', engine = 'netcdf4')
+    acs_cal_ds.to_netcdf(save_filepath,'a',engine = 'netcdf4', group = 'acs_factory_calibration')
+    if os.path.isfile(save_filepath):
+        return True
+
+
+#
+# def export2nc_tsg(tsg_ds, save_filepath):
+#     tsg_ds.to_netcdf(save_filepath,'w', engine = 'netcdf4')
+#     if os.path.isfile(save_filepath):
+#         return True
+#
+#
+# def export2nc_gps(gps_ds, save_filepath):
+#     gps_ds.to_netcdf(save_filepath,'w', engine = 'netcdf4')
+#     if os.path.isfile(save_filepath):
+#         return True
+#
+# def export2nc_valve(gps_ds, save_filepath):
+#     gps_ds.to_netcdf(save_filepath,'w', engine = 'netcdf4')
+#     if os.path.isfile(save_filepath):
+#         return True
+#
+
+
+if __name__ == "__main__":
+    main()

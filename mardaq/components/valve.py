@@ -1,8 +1,6 @@
-from mardaq.core import *
-from mardaq.relay import Relay
+from mardaq.components.relay import Relay
 
-
-class AtlanticBVB4TV():
+class ATLANTICBVB4TV():
     def __init__(self, serial_number, channel = 2):
         self.sn = serial_number
         self.relay = Relay()
@@ -21,13 +19,13 @@ class AtlanticBVB4TV():
         self.relay.disable(self.pin)
 
 
-    def get_state(self):
+    def get_data(self):
         dt, relay_state = self.relay.state(self.pin)
         if relay_state is False:
-            seawater_state = "TSW"
+            seawater_state = 0 #TSW
         elif relay_state is True:
-            seawater_state = "FSW"
-        return (self.sn, dt, relay_state, seawater_state)
+            seawater_state = 1 #FSW
+        return (dt, relay_state, seawater_state, self.sn)
 
 
     def closeout(self) -> None:

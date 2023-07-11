@@ -160,6 +160,9 @@ class RS232():
     def read(self, number_of_bytes):
         return self.rs232.read(number_of_bytes)
 
+    def read_buffer(self):
+        return self.rs232.read(self.rs232.in_waiting)
+
     def read_bytes(self, check_interval=0.1, read_timeout=60):
         self.check_interval = check_interval
         self.read_timeout = read_timeout
@@ -184,7 +187,7 @@ class RS232():
         start = time.monotonic()
         time.sleep(self.check_interval)
         while True:
-            if (time.monotonic()-start) > self.read_timeout:
+            if (time.monotonic() - start) > self.read_timeout:
                 raise StopIteration("Forced serial read timeout.")
             incoming = self.rs232.in_waiting
             if buffer == incoming:
@@ -194,11 +197,13 @@ class RS232():
                 buffer = incoming
                 time.sleep(self.check_interval)
 
-# ----------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------#
 
     def read_until_stop(self, check_interval_ms=100, read_timeout=30):
         """
-        Read until the buffer value stops changing.
+        Read until the buffer value stops changing. Typically used for situations where the response from the
+        sensor is expected to be a single data point. Should not be implemented for sensors that continually send data.
+
         Parameters
         ----------
         check_interval_ms : int, optional
@@ -209,7 +214,7 @@ class RS232():
         data : string
             An ASCII response from the sensor.
         """
-        self.check_interval = check_interval_ms/1000
+        self.check_interval = check_interval_ms / 1000
         self.read_timeout = read_timeout
         self._input_buffer_check()  # Check the buffer until it stops.
         incoming = self.rs232.read(self._buffer_length)

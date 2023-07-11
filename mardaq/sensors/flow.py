@@ -1,7 +1,9 @@
-from mardaq.core import *
+from datetime import datetime, timezone
+from labjack import ljm
 
 
-class OmegaFPR302():
+
+class OmegaFPR302_Labjack():
     def __init__(self, serial_number, kfactor, CIO_pin = 18):
         self.sn = serial_number
         self.kfac = kfactor
@@ -67,7 +69,7 @@ class OmegaFPR302():
         pulses = ljm.eReadName(self.handle, f"DIO{self._pin}_EF_READ_A")
         return pulses
 
-    def get_state(self):
+    def get_data(self):
         dt = datetime.now(timezone.utc)
         pulses = self.get_pulses()
         gal = pulses/self.kfac
@@ -75,11 +77,11 @@ class OmegaFPR302():
         if self.old_sample is None:
             ml_per_min = 0
         elif self.old_sample is not None:
-            last_ml = self.old_sample[4]
-            last_dt = self.old_sample[1]
+            last_ml = self.old_sample[3]
+            last_dt = self.old_sample[0]
             delta_dt = dt - last_dt
             delta_ml = ml - last_ml
             ml_per_min = (delta_ml / delta_dt.total_seconds()) * 60
-        data_tuple = (self.sn, dt, self.kfac, pulses, ml, ml_per_min)
+        data_tuple = (dt, self.kfac, pulses, ml, ml_per_min, self.sn)
         self.old_sample = data_tuple
         return data_tuple

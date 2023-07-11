@@ -1,10 +1,15 @@
-from mardaq.core import *
-from mardaq.gps import AdafruitHAT
+from datetime import datetime
+import os
+
+from mardaq.sensors.gps import ADAFRUITGPSHAT
+
+
+
+
 
 def main():
-    gps = AdafruitHAT('00001')
+    gps = ADAFRUITGPSHAT('00001')
     raw, parsed = gps.get_active_message()
-
     if parsed is not None:
         disable_ntp()
         gps_time = datetime.combine(parsed.date, parsed.time)
@@ -14,6 +19,21 @@ def main():
     elif parsed is None:
         msg = "GPS was unable to acquire a stable datetime. Continuing with NTP time."
         raise UserWarning(msg)
+
+def disable_ntp():
+    """Disables NTP functionality so the clock can be set by a non-networked time source."""
+    cmd = 'sudo timedatectl set-ntp false'
+    os.system(cmd)
+
+
+def enable_ntp():
+    """Enables NTP functionality so the network clock can be the time source."""
+    cmd = 'sudo timedatectl set-ntp true'
+    os.system(cmd)
+
+
+
+
 
 if __name__ == "__main__":
     main()

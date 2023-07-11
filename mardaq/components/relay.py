@@ -1,15 +1,21 @@
-from mardaq.core import *
+from datetime import datetime, timezone
+import RPi.GPIO as GPIO
+import time
 
 class Relay():
-    def __init__(self) -> None:
+    def __init__(self,disable_warnings = True) -> None:
         # Default pins for the Waveshare Relay Hat (three relay version).
         self.One = 26
         self.Two = 20
         self.Three = 21
 
+        if disable_warnings is True:
+            GPIO.setwarnings(False)
+
         # By default, pins in the 0 state will flip a relay.
         # Setting the initial to 1 ensures they do not flip at start.
         GPIO.setmode(GPIO.BCM)
+
         self.initialize_relay(self.One)
         self.initialize_relay(self.Two)
         self.initialize_relay(self.Three)
