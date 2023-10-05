@@ -1,0 +1,1 @@
+python /home/sel/mardaq/scripts/set_valve_fsw.py
